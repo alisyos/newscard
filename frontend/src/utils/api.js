@@ -42,16 +42,31 @@ export const uploadFile = async (file) => {
   }
 };
 
-export const generateImage = async (prompt, title = "", content = "", highlight = "") => {
+export const generateImage = async (
+  prompt, 
+  title = "", 
+  content = "", 
+  highlight = "", 
+  style = "사진", 
+  backgroundColor = ""
+) => {
   try {
     console.log('Generating image with prompt:', prompt);
-    console.log('Additional card info:', { title, content, highlight });
+    console.log('Additional card info:', { 
+      title, 
+      content, 
+      highlight,
+      style,
+      backgroundColor
+    });
     
     const response = await api.post('/api/generate-image', { 
       prompt,
       title,
       content, 
-      highlight
+      highlight,
+      style,
+      backgroundColor
     });
     
     console.log('Image generation response:', response.data);

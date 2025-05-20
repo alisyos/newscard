@@ -239,12 +239,18 @@ const SplitView = () => {
         // 새로운 프롬프트 형식에 맞게 기본 프롬프트 업데이트
         const prompt = card.prompt || `고품질의 카드뉴스 이미지를 생성해주세요. "${card.title}"의 주제에 맞는 시각적으로 매력적인 이미지. 텍스트 없이 시각적 요소만으로 주제를 전달할 수 있도록 해주세요.`;
         
+        // 기본 이미지 스타일과 배경색
+        const style = "사진";
+        const backgroundColor = "";
+        
         // 카드의 제목, 내용, 강조 문구를 함께 전달
         const result = await generateImage(
           prompt, 
           card.title, 
           card.content, 
-          card.highlight
+          card.highlight,
+          style,
+          backgroundColor
         );
         
         if (result.image_url) {

@@ -223,12 +223,23 @@ def analyze_text(text):
         return get_sample_cards(f"처리 오류: {str(e)}")
 
 # 이미지 생성 함수
-def generate_image(prompt, title="", content="", highlight=""):
+def generate_image(prompt, title="", content="", highlight="", style="사진", background_color=""):
     try:
         if not prompt or len(prompt.strip()) == 0:
             logger.error("Empty prompt provided for image generation")
             return ""
             
+        # 스타일 정보
+        style_str = f"스타일: {style}" if style else ""
+        
+        # 배경색 정보
+        bg_color_str = f"배경색: {background_color}" if background_color else ""
+        
+        # 추가 스타일 정보 결합
+        additional_styles = ""
+        if style_str or bg_color_str:
+            additional_styles = f"\n\n[스타일 옵션]\n{style_str}\n{bg_color_str}".strip()
+        
         # 카드 정보를 조합하여 풍부한 프롬프트 구성
         enhanced_prompt = f"""당신은 카드뉴스 생성 전문가 입니다. 아래 조건에 맞는 바로 매체에 등록가능한 수준의 카드뉴스 이미지를 생성해주세요.
 
@@ -238,7 +249,7 @@ def generate_image(prompt, title="", content="", highlight=""):
 [이미지 안에 다음 문구를 포함]
 메인문구: {title}
 강조: {highlight}
-내용: {content}"""
+내용: {content}{additional_styles}"""
 
         logger.info(f"Starting image generation with OpenAI API, prompt length: {len(enhanced_prompt)}")
         logger.debug(f"Enhanced prompt: {enhanced_prompt}")
@@ -344,10 +355,19 @@ def api_generate_image():
         title = data.get('title', '')
         content = data.get('content', '') 
         highlight = data.get('highlight', '')
+        style = data.get('style', '사진')
+        background_color = data.get('backgroundColor', '')
         
         logger.info(f"Image generation requested for title: '{title[:30]}...' with prompt: {prompt[:100]}...")
         
-        image_url = generate_image(prompt, title, content, highlight)
+        image_url = generate_image(
+            prompt, 
+            title, 
+            content, 
+            highlight,
+            style, 
+            background_color
+        )
         
         if not image_url:
             logger.error("Image generation failed - empty URL returned")
