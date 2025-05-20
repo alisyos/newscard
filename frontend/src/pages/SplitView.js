@@ -147,6 +147,7 @@ const SplitView = () => {
   const [cardCount, setCardCount] = useState(5); // 원하는 카드 수 (기본값 5)
   const [contentType, setContentType] = useState('text'); // text 또는 file
   const [additionalContent, setAdditionalContent] = useState(''); // 첨부내용 (텍스트)
+  const [additionalRequest, setAdditionalRequest] = useState(''); // 추가 요청사항
   const [files, setFiles] = useState([]); // 첨부내용 (파일)
   const [cards, setCards] = useState(sampleCards);
   const [currentPage, setCurrentPage] = useState(0);
@@ -154,6 +155,11 @@ const SplitView = () => {
   const [imageLoading, setImageLoading] = useState(false);
   const [error, setError] = useState('');
   const [downloadLoading, setDownloadLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false); // 편집 모드 상태
+  const [editTitle, setEditTitle] = useState(''); // 편집 중인 제목
+  const [editContent, setEditContent] = useState(''); // 편집 중인 내용
+  const [editHighlight, setEditHighlight] = useState(''); // 편집 중인 강조 문구
+  const [editPrompt, setEditPrompt] = useState(''); // 편집 중인 이미지 프롬프트
 
   // 파일 선택 처리
   const handleFileChange = (e) => {
@@ -233,42 +239,54 @@ const SplitView = () => {
   // 이미지 생성 처리
   const handleGenerateImage = async (cardIndex) => {
     const card = cards[cardIndex];
-    if (!card.image) {
-      setImageLoading(true);
-      try {
-        // 새로운 프롬프트 형식에 맞게 기본 프롬프트 업데이트
-        const prompt = card.prompt || `고품질의 카드뉴스 이미지를 생성해주세요. "${card.title}"의 주제에 맞는 시각적으로 매력적인 이미지. 텍스트 없이 시각적 요소만으로 주제를 전달할 수 있도록 해주세요.`;
-        
-        // 기본 이미지 스타일과 배경색
-        const style = "사진";
-        const backgroundColor = "";
-        
-        // 카드의 제목, 내용, 강조 문구를 함께 전달
-        const result = await generateImage(
-          prompt, 
-          card.title, 
-          card.content, 
-          card.highlight,
-          style,
-          backgroundColor
-        );
-        
-        if (result.image_url) {
-          const updatedCards = [...cards];
-          updatedCards[cardIndex] = {
-            ...updatedCards[cardIndex],
-            image: result.image_url
-          };
-          setCards(updatedCards);
-        } else {
-          setError('이미지 URL을 받지 못했습니다.');
-        }
-      } catch (error) {
-        setError('이미지 생성 중 오류가 발생했습니다.');
-        console.error('Failed to generate image:', error);
-      } finally {
-        setImageLoading(false);
+    setImageLoading(true);
+    try {
+      // 새로운 프롬프트 형식에 맞게 기본 프롬프트 업데이트
+      const prompt = card.prompt || `고품질의 카드뉴스 이미지를 생성해주세요. "${card.title}"의 주제에 맞는 시각적으로 매력적인 이미지. 텍스트 없이 시각적 요소만으로 주제를 전달할 수 있도록 해주세요.`;
+      
+      // 추가 요청사항에서 스타일과 배경색 추출
+      let style = "사진"; // 기본값
+      let backgroundColor = "";
+      
+      // 스타일 추출
+      const styleMatch = additionalRequest.match(/스타일\s*:\s*([^\n,]+)/i);
+      if (styleMatch && styleMatch[1]) {
+        style = styleMatch[1].trim();
       }
+      
+      // 배경색 추출
+      const bgColorMatch = additionalRequest.match(/배경색\s*:\s*([^\n,]+)/i);
+      if (bgColorMatch && bgColorMatch[1]) {
+        backgroundColor = bgColorMatch[1].trim();
+      }
+      
+      console.log('Using style:', style, 'and background color:', backgroundColor);
+      
+      // 카드의 제목, 내용, 강조 문구를 함께 전달
+      const result = await generateImage(
+        prompt, 
+        card.title, 
+        card.content, 
+        card.highlight,
+        style,
+        backgroundColor
+      );
+      
+      if (result.image_url) {
+        const updatedCards = [...cards];
+        updatedCards[cardIndex] = {
+          ...updatedCards[cardIndex],
+          image: result.image_url
+        };
+        setCards(updatedCards);
+      } else {
+        setError('이미지 URL을 받지 못했습니다.');
+      }
+    } catch (error) {
+      setError('이미지 생성 중 오류가 발생했습니다.');
+      console.error('Failed to generate image:', error);
+    } finally {
+      setImageLoading(false);
     }
   };
 
@@ -300,6 +318,35 @@ const SplitView = () => {
     } finally {
       setDownloadLoading(false);
     }
+  };
+
+  // 편집 모드 시작
+  const handleEditStart = () => {
+    const card = cards[currentPage];
+    setEditTitle(card.title);
+    setEditContent(card.content);
+    setEditHighlight(card.highlight);
+    setEditPrompt(card.prompt || '');
+    setIsEditing(true);
+  };
+
+  // 편집 적용
+  const handleEditSave = () => {
+    const updatedCards = [...cards];
+    updatedCards[currentPage] = {
+      ...updatedCards[currentPage],
+      title: editTitle,
+      content: editContent,
+      highlight: editHighlight,
+      prompt: editPrompt
+    };
+    setCards(updatedCards);
+    setIsEditing(false);
+  };
+
+  // 편집 취소
+  const handleEditCancel = () => {
+    setIsEditing(false);
   };
 
   // 현재 표시 중인 카드
@@ -425,24 +472,102 @@ const SplitView = () => {
         </div>
         
         <div style={styles.cardPreview}>
-          {/* 제목 */}
-          <h3>{currentCard.title}</h3>
+          {/* 제목과 편집 버튼 */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            {isEditing ? (
+              <input
+                type="text"
+                style={{ ...styles.input, flex: 1, marginRight: '10px' }}
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+              />
+            ) : (
+              <h3 style={{ flex: 1 }}>{currentCard.title}</h3>
+            )}
+            
+            {isEditing ? (
+              <div>
+                <button 
+                  style={{ ...styles.button, marginRight: '5px', backgroundColor: '#4caf50' }}
+                  onClick={handleEditSave}
+                >
+                  저장
+                </button>
+                <button 
+                  style={{ ...styles.button, backgroundColor: '#f44336' }}
+                  onClick={handleEditCancel}
+                >
+                  취소
+                </button>
+              </div>
+            ) : (
+              <button 
+                style={{ ...styles.button, backgroundColor: '#2196f3' }}
+                onClick={handleEditStart}
+              >
+                편집
+              </button>
+            )}
+          </div>
           
           {/* 강조 문구 */}
-          <p style={{...styles.highlightText, marginBottom: '20px'}}>
-            <strong>강조:</strong> {currentCard.highlight}
-          </p>
+          {isEditing ? (
+            <div style={{ marginBottom: '20px' }}>
+              <strong>강조:</strong>
+              <input
+                type="text"
+                style={styles.input}
+                value={editHighlight}
+                onChange={(e) => setEditHighlight(e.target.value)}
+              />
+            </div>
+          ) : (
+            <p style={{...styles.highlightText, marginBottom: '20px'}}>
+              <strong>강조:</strong> {currentCard.highlight}
+            </p>
+          )}
           
           {/* 내용 */}
           <div style={{marginBottom: '20px'}}>
             <strong>내용:</strong>
-            <p>{currentCard.content}</p>
+            {isEditing ? (
+              <textarea
+                style={{ ...styles.textarea, width: '100%' }}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+              />
+            ) : (
+              <p>{currentCard.content}</p>
+            )}
           </div>
           
           {/* 프롬프트 */}
           <div style={{marginBottom: '20px'}}>
             <strong>이미지 프롬프트:</strong>
-            <p style={{fontStyle: 'italic', color: '#555'}}>{currentCard.prompt || '프롬프트가 없습니다.'}</p>
+            {isEditing ? (
+              <textarea
+                style={{ ...styles.textarea, width: '100%' }}
+                value={editPrompt}
+                onChange={(e) => setEditPrompt(e.target.value)}
+                placeholder="이미지 생성을 위한 프롬프트를 입력하세요"
+              />
+            ) : (
+              <p style={{fontStyle: 'italic', color: '#555'}}>{currentCard.prompt || '프롬프트가 없습니다.'}</p>
+            )}
+          </div>
+          
+          {/* 추가 요청사항 입력 */}
+          <div style={{marginBottom: '20px'}}>
+            <strong>추가 요청:</strong>
+            <textarea
+              style={{ ...styles.textarea, marginTop: '5px' }}
+              placeholder="이미지 스타일, 배경색, 폰트색 등 추가 요청사항을 입력하세요"
+              value={additionalRequest}
+              onChange={e => setAdditionalRequest(e.target.value)}
+            />
+            <p style={{fontSize: '0.8rem', marginTop: '5px', color: '#666'}}>
+              예시: 스타일: 수채화, 배경색: 파스텔톤, 폰트색: 검정색
+            </p>
           </div>
           
           {/* 이미지 또는 이미지 생성 버튼 */}
@@ -453,15 +578,26 @@ const SplitView = () => {
                 alt={currentCard.title} 
                 style={styles.cardImage}
               />
+              <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                <button 
+                  style={imageLoading ? styles.disabledButton : {...styles.button, backgroundColor: '#ff9800'}}
+                  onClick={() => handleGenerateImage(currentPage)} 
+                  disabled={imageLoading}
+                >
+                  {imageLoading ? '이미지 생성 중...' : '이미지 재생성하기'}
+                </button>
+              </div>
             </div>
           ) : (
-            <button 
-              style={imageLoading ? styles.disabledButton : styles.button}
-              onClick={() => handleGenerateImage(currentPage)} 
-              disabled={imageLoading}
-            >
-              {imageLoading ? '이미지 생성 중...' : '이미지 생성하기'}
-            </button>
+            <div style={{ textAlign: 'center' }}>
+              <button 
+                style={imageLoading ? styles.disabledButton : styles.button}
+                onClick={() => handleGenerateImage(currentPage)} 
+                disabled={imageLoading}
+              >
+                {imageLoading ? '이미지 생성 중...' : '이미지 생성하기'}
+              </button>
+            </div>
           )}
         </div>
         
