@@ -245,7 +245,7 @@ const SplitView = () => {
       const prompt = card.prompt || `고품질의 카드뉴스 이미지를 생성해주세요. "${card.title}"의 주제에 맞는 시각적으로 매력적인 이미지. 텍스트 없이 시각적 요소만으로 주제를 전달할 수 있도록 해주세요.`;
       
       // 추가 요청사항에서 스타일과 배경색 추출
-      let style = "사진"; // 기본값
+      let style = ""; // 기본값 없음
       let backgroundColor = "";
       
       // 스타일 추출
@@ -262,11 +262,16 @@ const SplitView = () => {
       
       console.log('Using style:', style, 'and background color:', backgroundColor);
       
+      // 카드 내용에 추가 요청사항 포함
+      const enhancedContent = additionalRequest 
+        ? `${card.content}\n\n추가 요청사항: ${additionalRequest}`
+        : card.content;
+      
       // 카드의 제목, 내용, 강조 문구를 함께 전달
       const result = await generateImage(
         prompt, 
         card.title, 
-        card.content, 
+        enhancedContent, 
         card.highlight,
         style,
         backgroundColor

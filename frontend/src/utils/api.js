@@ -47,7 +47,7 @@ export const generateImage = async (
   title = "", 
   content = "", 
   highlight = "", 
-  style = "사진", 
+  style = "", 
   backgroundColor = ""
 ) => {
   try {

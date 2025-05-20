@@ -223,24 +223,25 @@ def analyze_text(text):
         return get_sample_cards(f"처리 오류: {str(e)}")
 
 # 이미지 생성 함수
-def generate_image(prompt, title="", content="", highlight="", style="사진", background_color=""):
+def generate_image(prompt, title="", content="", highlight="", style="", background_color=""):
     try:
         if not prompt or len(prompt.strip()) == 0:
             logger.error("Empty prompt provided for image generation")
             return ""
             
-        # 스타일 정보
-        style_str = f"스타일: {style}" if style else ""
-        
-        # 배경색 정보
-        bg_color_str = f"배경색: {background_color}" if background_color else ""
-        
-        # 추가 스타일 정보 결합
+        # 추가 스타일 정보는 사용자가 명시적으로 지정한 경우에만 포함
         additional_styles = ""
-        if style_str or bg_color_str:
-            additional_styles = f"\n\n[스타일 옵션]\n{style_str}\n{bg_color_str}".strip()
+        if style or background_color:
+            style_parts = []
+            if style:
+                style_parts.append(f"스타일: {style}")
+            if background_color:
+                style_parts.append(f"배경색: {background_color}")
+                
+            if style_parts:
+                additional_styles = "\n\n" + "\n".join(style_parts)
         
-        # 카드 정보를 조합하여 풍부한 프롬프트 구성
+        # 카드 정보를 조합하여 풍부한 프롬프트 구성 (스타일 옵션 제외)
         enhanced_prompt = f"""당신은 카드뉴스 생성 전문가 입니다. 아래 조건에 맞는 바로 매체에 등록가능한 수준의 카드뉴스 이미지를 생성해주세요.
 
 [이미지 프롬프트]
