@@ -385,5 +385,6 @@ def api_generate_image():
 def echo():
     return jsonify({"received": request.json})
 
+# 애플리케이션 직접 실행 시에만 서버 시작
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000) 

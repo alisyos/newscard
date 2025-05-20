@@ -1,0 +1,29 @@
+services:
+  # 백엔드 서비스 정의
+  - type: web
+    name: newscard-backend
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && gunicorn flask_app:app
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false # 수동으로 설정해야 하는 비밀 값
+    healthCheckPath: /
+
+  # 프론트엔드 서비스 정의
+  - type: web
+    name: newscard-frontend
+    runtime: static
+    plan: free
+    region: singapore
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://newscard-backend.onrender.com
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache 
