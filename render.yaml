@@ -5,7 +5,7 @@ services:
     runtime: python
     region: singapore
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && gunicorn flask_app:app
+    startCommand: cd backend && gunicorn flask_app:app --timeout 120
     envVars:
       - key: OPENAI_API_KEY
         sync: false # 수동으로 설정해야 하는 비밀 값
