@@ -3,7 +3,6 @@ services:
   - type: web
     name: newscard-backend
     runtime: python
-    plan: free
     region: singapore
     buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && gunicorn flask_app:app
@@ -16,7 +15,6 @@ services:
   - type: web
     name: newscard-frontend
     runtime: static
-    plan: free
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/build
     envVars:
